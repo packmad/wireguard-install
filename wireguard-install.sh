@@ -121,16 +121,7 @@ function installQuestions() {
     read -rp "IPv4 or IPv6 public address: " -e -i "${SERVER_PUB_IP}" SERVER_PUB_IP
   fi
 
-  # Detect public interface and pre-fill for the user
-  SERVER_NIC="${SERVER_NIC:-$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)}"
-  APPROVE_NIC=${APPROVE_NIC:-n}
-  if [[ ${APPROVE_IP} =~ n ]]; then
-    until [[ ${SERVER_PUB_NIC} =~ ^[a-zA-Z0-9_]+$ || ${APPROVE_NIC} =~ n ]]; do
-      read -rp "Public interface: " -e -i "${SERVER_NIC}" SERVER_PUB_NIC
-    done
-  else
-    SERVER_PUB_NIC="${SERVER_NIC}"
-  fi
+  SERVER_PUB_NIC="eth0"
 
   until [[ ${SERVER_WG_NIC} =~ ^[a-zA-Z0-9_]+$ && ${#SERVER_WG_NIC} -lt 16 ]]; do
     read -rp "WireGuard interface name: " -e -i "${SERVER_WG_NIC_DEFAULT}" SERVER_WG_NIC
@@ -274,7 +265,8 @@ PostUp = iptables -t nat -A POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
 PostDown = iptables -D INPUT -p udp --dport ${SERVER_PORT} -j ACCEPT
 PostDown = iptables -D FORWARD -i ${SERVER_PUB_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
 PostDown = iptables -D FORWARD -i ${SERVER_WG_NIC} -j ACCEPT
-PostDown = iptables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+PostDown = iptables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
+" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
   fi
 
   # Enable routing on the server
